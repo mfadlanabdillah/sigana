@@ -11,24 +11,24 @@ const disasterTypes = {
 };
 
 const statusConfig = {
-  aktif: { label: 'Aktif', class: 'bg-primary' },
-  siaga: { label: 'Siaga', class: 'bg-warning' },
-  terkendali: { label: 'Terdangani', class: 'bg-success' },
-  selesai: { label: 'Selesai', class: 'bg-muted' },
+  aktif: { label: 'Aktif', class: 'bg-primary text-primary-foreground' },
+  siaga: { label: 'Siaga', class: 'bg-warning text-black' },
+  terkendali: { label: 'Terdangani', class: 'bg-success text-white' },
+  selesai: { label: 'Selesai', class: 'bg-muted text-muted-foreground' },
 };
 
 const severityConfig = {
-  ringan: { label: 'Ringan', class: 'bg-success text-white' },
-  sedang: { label: 'Sedang', class: 'bg-warning text-white' },
-  berat: { label: 'Berat', class: 'bg-orange-500 text-white' },
+  ringan: { label: 'Ringan', class: 'bg-[hsl(var(--severity-ringan))] text-white' },
+  sedang: { label: 'Sedang', class: 'bg-[hsl(var(--severity-sedang))] text-black' },
+  berat: { label: 'Berat', class: 'bg-[hsl(var(--severity-berat))] text-white' },
   kritis: { label: 'Kritis', class: 'bg-destructive text-white' },
 };
 
 const warningLevels = {
-  hijau: { label: 'Hijau', class: 'bg-green-500' },
-  kuning: { label: 'Kuning', class: 'bg-yellow-500' },
-  oranye: { label: 'Oranye', class: 'bg-orange-500' },
-  merah: { label: 'Merah', class: 'bg-destructive' },
+  hijau: { label: 'Hijau', class: 'bg-[hsl(var(--warning-hijau))] text-white' },
+  kuning: { label: 'Kuning', class: 'bg-[hsl(var(--warning-kuning))] text-black' },
+  oranye: { label: 'Oranye', class: 'bg-[hsl(var(--warning-oranye))] text-white' },
+  merah: { label: 'Merah', class: 'bg-destructive text-white' },
 };
 
 const aidTypes = {

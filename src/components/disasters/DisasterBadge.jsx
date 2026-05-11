@@ -1,28 +1,48 @@
-import { statusConfig, severityConfig } from '../../lib/data';
-
 export function DisasterBadge({ status }) {
-  const config = statusConfig[status] || { label: status, class: 'bg-muted' };
+  const statusClasses = {
+    aktif: 'bg-primary text-primary-foreground',
+    siaga: 'bg-warning text-black',
+    terkendali: 'bg-success text-white',
+    selesai: 'bg-muted text-muted-foreground',
+  };
+  const statusLabels = {
+    aktif: 'Aktif',
+    siaga: 'Siaga',
+    terkendali: 'Terdangani',
+    selesai: 'Selesai',
+  };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium text-white ${config.class}`}>
-      {config.label}
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClasses[status] || 'bg-muted text-muted-foreground'}`}>
+      {statusLabels[status] || status}
     </span>
   );
 }
 
 export function SeverityBadge({ severity }) {
-  const config = severityConfig[severity] || { label: severity, class: 'bg-muted' };
+  const severityClasses = {
+    ringan: 'bg-[hsl(var(--severity-ringan))] text-white',
+    sedang: 'bg-[hsl(var(--severity-sedang))] text-black',
+    berat: 'bg-[hsl(var(--severity-berat))] text-white',
+    kritis: 'bg-destructive text-white',
+  };
+  const severityLabels = {
+    ringan: 'Ringan',
+    sedang: 'Sedang',
+    berat: 'Berat',
+    kritis: 'Kritis',
+  };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${config.class}`}>
-      {config.label}
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${severityClasses[severity] || 'bg-muted text-muted-foreground'}`}>
+      {severityLabels[severity] || severity}
     </span>
   );
 }
 
 export function WarningLevelBadge({ level }) {
-  const levelColors = {
-    hijau: 'bg-green-500 text-white',
-    kuning: 'bg-yellow-500 text-black',
-    oranye: 'bg-orange-500 text-white',
+  const levelClasses = {
+    hijau: 'bg-[hsl(var(--warning-hijau))] text-white',
+    kuning: 'bg-[hsl(var(--warning-kuning))] text-black',
+    oranye: 'bg-[hsl(var(--warning-oranye))] text-white',
     merah: 'bg-destructive text-white',
   };
   const levelLabels = {
@@ -32,17 +52,17 @@ export function WarningLevelBadge({ level }) {
     merah: 'Merah',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${levelColors[level] || 'bg-muted'}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${levelClasses[level] || 'bg-muted text-muted-foreground'}`}>
       {levelLabels[level] || level}
     </span>
   );
 }
 
 export function AidStatusBadge({ status }) {
-  const statusConfig = {
+  const statusClasses = {
     dibutuhkan: 'bg-destructive text-white',
     dalam_perjalanan: 'bg-warning text-black',
-    tiba: 'bg-primary text-white',
+    tiba: 'bg-primary text-primary-foreground',
     terdistribusi: 'bg-success text-white',
   };
   const statusLabels = {
@@ -52,7 +72,7 @@ export function AidStatusBadge({ status }) {
     terdistribusi: 'Terdistribusi',
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusConfig[status] || 'bg-muted'}`}>
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusClasses[status] || 'bg-muted text-muted-foreground'}`}>
       {statusLabels[status] || status}
     </span>
   );

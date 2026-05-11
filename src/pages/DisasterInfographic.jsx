@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import {
   BarChart,
   Bar,
@@ -13,12 +14,16 @@ import {
   Line,
 } from 'recharts';
 import AppLayout from '../components/layout/AppLayout';
+import AnimatedCounter from '../components/ui/AnimatedCounter';
+import { CustomTooltip } from '../components/ui/CustomTooltip';
 import { mockDisasters, disasterTypes, severityConfig } from '../lib/data';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316'];
 
 export default function DisasterInfographic() {
   const [selectedYear, setSelectedYear] = useState(2024);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   const summaryStats = useMemo(() => {
     const yearDisasters = mockDisasters.filter(
@@ -77,61 +82,94 @@ export default function DisasterInfographic() {
 
   return (
     <AppLayout title="Infografis Bencana">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="space-y-6"
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.1 }}
+          className="flex items-center justify-between"
+        >
           <h2 className="font-heading font-semibold text-lg">Filter Tahun</h2>
-          <select
+          <motion.select
+            whileTap={{ scale: 0.98 }}
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-4 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
+            className="px-4 py-2 bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring smooth-input"
           >
             <option value={2024}>2024</option>
             <option value={2023}>2023</option>
             <option value={2022}>2022</option>
-          </select>
-        </div>
+          </motion.select>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-card border border-border rounded-xl p-6">
-            <p className="text-sm text-muted-foreground">Total Bencana</p>
-            <p className="text-3xl font-bold mt-1">{summaryStats.total}</p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-6">
-            <p className="text-sm text-muted-foreground">Total Terdampak</p>
-            <p className="text-3xl font-bold mt-1">
-              {(summaryStats.totalAffected / 1000).toFixed(1)}K
-            </p>
-          </div>
-          <div className="bg-card border border-border rounded-xl p-6">
-            <p className="text-sm text-muted-foreground">Total Korban Jiwa</p>
-            <p className="text-3xl font-bold mt-1 text-destructive">
-              {summaryStats.totalCasualties}
-            </p>
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          {[
+            { label: 'Total Bencana', value: summaryStats.total, prefix: '' },
+            { label: 'Total Terdampak', value: Math.floor(summaryStats.totalAffected / 1000), suffix: 'K' },
+            { label: 'Total Korban Jiwa', value: summaryStats.totalCasualties, prefix: '' },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={isInView ? { opacity: 1, y: 0 } : {}}
+              transition={{ delay: 0.2 + index * 0.05 }}
+              whileHover={{ y: -2, boxShadow: '0 8px 24px -4px rgba(0,0,0,0.1)' }}
+              className="bg-card border border-border rounded-xl p-6"
+            >
+              <p className="text-sm text-muted-foreground">{stat.label}</p>
+              <p className="text-3xl font-bold mt-1">
+                <AnimatedCounter value={stat.value} prefix={stat.prefix} suffix={stat.suffix} />
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-card border border-border rounded-xl p-4">
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="bg-card border border-border rounded-xl p-4"
+          >
             <h3 className="font-heading font-semibold mb-4">Tren Bulanan</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyTrend}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                   <Line
                     type="monotone"
                     dataKey="count"
                     stroke="hsl(213 85% 48%)"
                     strokeWidth={2}
                     dot={{ fill: 'hsl(213 85% 48%)' }}
+                    animationBegin={0}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
                   />
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-card border border-border rounded-xl p-4">
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: 0.35, duration: 0.5 }}
+            className="bg-card border border-border rounded-xl p-4"
+          >
             <h3 className="font-heading font-semibold mb-4">Distribusi Jenis Bencana</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -144,12 +182,15 @@ export default function DisasterInfographic() {
                     outerRadius={80}
                     paddingAngle={2}
                     dataKey="value"
+                    animationBegin={0}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
                   >
                     {disasterDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -164,31 +205,41 @@ export default function DisasterInfographic() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-card border border-border rounded-xl p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="bg-card border border-border rounded-xl p-4"
+          >
             <h3 className="font-heading font-semibold mb-4">Distribusi per Provinsi</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={provinceDistribution} layout="vertical">
                   <XAxis type="number" tick={{ fontSize: 12 }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="hsl(213 85% 48%)" radius={[0, 4, 4, 0]} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="count" fill="hsl(213 85% 48%)" radius={[0, 4, 4, 0]} animationBegin={0} animationDuration={1000} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-card border border-border rounded-xl p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={isInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.45, duration: 0.5 }}
+            className="bg-card border border-border rounded-xl p-4"
+          >
             <h3 className="font-heading font-semibold mb-4">Distribusi Severity</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={severityDistribution}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]} animationBegin={0} animationDuration={1000}>
                     {severityDistribution.map((entry, index) => (
                       <Cell
                         key={`cell-${index}`}
@@ -199,9 +250,9 @@ export default function DisasterInfographic() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     </AppLayout>
   );
 }

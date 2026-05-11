@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useState, useRef, useEffect } from 'react';
+import { motion, useInView, AnimatePresence } from 'framer-motion';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import {
@@ -18,7 +19,6 @@ import {
   mockEvacuationCenters,
   disasterTypes,
   centerTypes,
-  statusConfig,
 } from '../lib/data';
 import { DisasterBadge, SeverityBadge } from '../components/disasters/DisasterBadge';
 import AppLayout from '../components/layout/AppLayout';
@@ -64,9 +64,9 @@ const tileLayers = {
 
 const createDisasterIcon = (type, status) => {
   const typeInfo = disasterTypes[type] || { emoji: '⚠️' };
-  const pulseClass = status === 'aktif' ? 'animate-pulse' : '';
+  const isActive = status === 'aktif';
   return L.divIcon({
-    html: `<div class="relative ${pulseClass}" style="font-size: 24px; text-align: center; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${typeInfo.emoji}</div>`,
+    html: `<div style="font-size: 24px; text-align: center; line-height: 1; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">${typeInfo.emoji}${isActive ? '<div class="absolute inset-0 rounded-full bg-destructive/30 animate-ping"></div>' : ''}</div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
     popupAnchor: [0, -36],
@@ -76,7 +76,6 @@ const createDisasterIcon = (type, status) => {
 
 const createCenterIcon = (type, status) => {
   const typeInfo = centerTypes[type] || { emoji: '🏠' };
-  const color = status === 'penuh' ? '#EF4444' : status === 'aktif' ? '#10B981' : '#6B7280';
   return L.divIcon({
     html: `<div style="font-size: 20px; text-align: center; line-height: 1;">${typeInfo.emoji}</div>`,
     iconSize: [30, 30],
@@ -86,18 +85,15 @@ const createCenterIcon = (type, status) => {
   });
 };
 
-function MapController({ zoom }) {
-  const map = useMap();
-  return null;
-}
-
 export default function DisasterMap() {
   const [activeLayer, setActiveLayer] = useState('street');
   const [showDisasters, setShowDisasters] = useState(true);
   const [showCenters, setShowCenters] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [zoomLevel, setZoomLevel] = useState(9);
-  const [mapRef, setMapRef] = useState(null);
+  const mapRef = useRef(null);
+  const controlsRef = useRef(null);
+  const controlsInView = useInView(controlsRef, { once: true });
 
   const filteredDisasters =
     statusFilter === 'all'
@@ -108,6 +104,14 @@ export default function DisasterMap() {
     (d) => d.status === 'aktif' || d.status === 'siaga'
   );
 
+  useEffect(() => {
+    if (mapRef.current) {
+      mapRef.current.on('zoomend', () => {
+        setZoomLevel(mapRef.current.getZoom());
+      });
+    }
+  }, []);
+
   return (
     <AppLayout title="Peta Bencana">
       <div className="relative h-[calc(100vh-8rem)]">
@@ -116,11 +120,8 @@ export default function DisasterMap() {
           zoom={9}
           bounds={JABAR_BOUNDS}
           scrollWheelZoom
-          className="h-full w-full rounded-xl"
-          ref={setMapRef}
-          whenReady={(map) => {
-            setZoomLevel(map.target.getZoom());
-          }}
+          className="h-full w-full rounded-xl z-0"
+          ref={mapRef}
         >
           <TileLayer
             attribution={tileLayers[activeLayer].attribution}
@@ -149,7 +150,7 @@ export default function DisasterMap() {
                   icon={createDisasterIcon(disaster.disaster_type, disaster.status)}
                 >
                   <Popup>
-                    <div className="p-2 min-w-[200px]">
+                    <div className="p-2 min-w-[200px] bg-card text-card-foreground">
                       <h3 className="font-semibold">{disaster.title}</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         {disaster.location_name}, {disaster.province}
@@ -177,7 +178,7 @@ export default function DisasterMap() {
                   icon={createCenterIcon(center.type, center.status)}
                 >
                   <Popup>
-                    <div className="p-2 min-w-[200px]">
+                    <div className="p-2 min-w-[200px] bg-card text-card-foreground">
                       <h3 className="font-semibold">{center.name}</h3>
                       <p className="text-sm text-muted-foreground mt-1">
                         {center.location_name}, {center.province}
@@ -194,15 +195,23 @@ export default function DisasterMap() {
           )}
         </MapContainer>
 
-        <div className="absolute top-4 left-4 z-[1000] bg-card border border-border rounded-xl shadow-lg p-3 space-y-3">
+        <motion.div
+          ref={controlsRef}
+          initial={{ opacity: 0, x: -20 }}
+          animate={controlsInView ? { opacity: 1, x: 0 } : {}}
+          transition={{ delay: 0.3, duration: 0.4 }}
+          className="absolute top-4 left-4 z-[1000] glass border border-border rounded-xl shadow-lg p-3 space-y-3"
+        >
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">Layer</span>
           </div>
           <div className="grid grid-cols-5 gap-1">
             {Object.entries(tileLayers).map(([key, layer]) => (
-              <button
+              <motion.button
                 key={key}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveLayer(key)}
                 className={`p-2 rounded-lg transition-colors ${
                   activeLayer === key
@@ -212,12 +221,17 @@ export default function DisasterMap() {
                 title={key.charAt(0).toUpperCase() + key.slice(1)}
               >
                 <layer.icon className="w-4 h-4" />
-              </button>
+              </motion.button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        <div className="absolute top-4 right-4 z-[1000] bg-card border border-border rounded-xl shadow-lg p-3 space-y-3">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+          className="absolute top-4 right-4 z-[1000] glass border border-border rounded-xl shadow-lg p-3 space-y-3"
+        >
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm font-medium">Filter</span>
@@ -244,7 +258,7 @@ export default function DisasterMap() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full text-sm border border-border rounded-lg p-1.5 bg-background"
+              className="w-full text-sm border border-input rounded-lg p-1.5 bg-background"
             >
               <option value="all">Semua Status</option>
               <option value="aktif">Aktif</option>
@@ -253,46 +267,79 @@ export default function DisasterMap() {
               <option value="selesai">Selesai</option>
             </select>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="absolute bottom-4 left-4 z-[1000] bg-card border border-border rounded-xl shadow-lg p-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="absolute bottom-4 left-4 z-[1000] glass-dark border border-border rounded-xl shadow-lg p-3"
+        >
           <div className="text-xs text-muted-foreground mb-2">Level Zoom: {zoomLevel}</div>
           <div className="flex flex-col gap-1">
-            <button
-              onClick={() => mapRef?.setZoom(zoomLevel + 1)}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => mapRef.current?.setZoom(zoomLevel + 1)}
               className="p-2 bg-muted hover:bg-accent rounded-lg transition-colors"
             >
               <ZoomIn className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => mapRef?.setZoom(zoomLevel - 1)}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => mapRef.current?.setZoom(zoomLevel - 1)}
               className="p-2 bg-muted hover:bg-accent rounded-lg transition-colors"
             >
               <ZoomOut className="w-4 h-4" />
-            </button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        {activeAlerts.length > 0 && (
-          <div className="absolute bottom-4 right-4 z-[1000] bg-destructive/90 text-white rounded-xl shadow-lg p-3 max-w-xs">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-semibold text-sm">Peringatan Aktif</span>
-              <span className="bg-white/20 px-2 py-0.5 rounded text-xs">
-                {activeAlerts.length}
-              </span>
-            </div>
-            <div className="space-y-1 text-xs max-h-24 overflow-y-auto">
-              {activeAlerts.slice(0, 3).map((alert) => (
-                <div key={alert.id} className="flex items-start gap-1.5">
-                  <span>{disasterTypes[alert.disaster_type]?.emoji}</span>
-                  <span className="truncate">{alert.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {activeAlerts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="absolute bottom-4 right-4 z-[1000] glass-dark border border-destructive/50 rounded-xl shadow-lg p-3 max-w-xs"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                  className="relative"
+                >
+                  <span className="font-semibold text-sm text-destructive">Peringatan Aktif</span>
+                </motion.div>
+                <span className="bg-destructive text-destructive-foreground px-2 py-0.5 rounded text-xs font-medium">
+                  {activeAlerts.length}
+                </span>
+              </div>
+              <div className="space-y-1 text-xs max-h-24 overflow-y-auto">
+                {activeAlerts.slice(0, 3).map((alert) => (
+                  <motion.div
+                    key={alert.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-start gap-1.5"
+                  >
+                    <span>{disasterTypes[alert.disaster_type]?.emoji}</span>
+                    <span className="truncate">{alert.title}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-card border border-border rounded-xl shadow-lg p-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] glass-dark border border-border rounded-xl shadow-lg p-3"
+        >
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1.5">
               <div className="w-6 h-6 bg-muted rounded flex items-center justify-center">🌊</div>
@@ -303,11 +350,11 @@ export default function DisasterMap() {
               <span>Posko</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white text-[10px]">3</div>
+              <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-[10px]">3</div>
               <span>Cluster</span>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </AppLayout>
   );
